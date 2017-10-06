@@ -1,6 +1,6 @@
 
 """
-    TORH1(z, m, nmax; ε = 1e-14, ipre = 1, mode = 1)
+    TORH1(z, m, nmax; ε = 1e-14, ipre = 1, mode = 0)
 
 Computes the toroidal harmonics P_{n-1/2}^m(z) and Q_{n-1/2}^m(z) of order m
 from the lowest degree n = 0 to n = nmax
@@ -12,16 +12,19 @@ from the lowest degree n = 0 to n = nmax
         if ipre = 1, precision=10**(-12) (taking ε<10**(-12))
         if ipre = 2, precision=10**(-8)  (taking ε<10**(-8))
  - isgamma  = true: enforces a multiplication with with gamma(M + 1/2)
+ - mode = 0: can also assume 1 and 2. (For mode = 1,
+            results are divided by gamma(m + 1/2), for mode = 2 is good for
+            high m's and for z > 20. )
 """
 function TORH1(Z::Real, M::Integer, nmax::Integer;
-                ε = 1e-14, ipre = 1, mode = 1, isgamma=true)
-                
-    const tiny = realmin(typeof(Z))*10^20 #1e-290
+                ε = 1e-14, ipre = 1, mode = 0, isgamma=true)
+
+    const tiny = realmin(typeof(Z))*10.0^20 #1e-290
 
     ####################################################################
     # The dimension of QLMM (internal array) must be greater than m
     ####################################################################
-    QLMM  = zeros(M*2)
+    QLMM  = zeros(10000 + M*2)
     PL = zeros(nmax+2)
     QL =  zeros(nmax+2)
 
@@ -32,7 +35,7 @@ function TORH1(Z::Real, M::Integer, nmax::Integer;
     end
 
     PR = [0.22 0.12]
-    nmaxP=nmax
+    nmaxP = nmax
     ####################################################################
     #   ε: required accuracy for the continued fraction
     #      (modified Lentz)
@@ -85,9 +88,10 @@ function TORH1(Z::Real, M::Integer, nmax::Integer;
     ####################################################################                                                                       C
     #   we use the code if nmax is greater than or equal to 2
     ####################################################################
-    if nmaxP < 2
-        nmaxP = 2
-    end
+    # if nmaxP < 2
+    #    nmaxP = 2
+    # end
+
     if mode == 0
         GAMMA = GAMMAH(M, over)*AR*πSQ
         if abs(GAMMA) < tiny
@@ -123,13 +127,13 @@ function TORH1(Z::Real, M::Integer, nmax::Integer;
             QLMM[MP + 2] = -2.0*MP*QARGU*QLMM[MP+1]-(MP-0.5)*(MP-0.5)*QLMM[MP]
             MP += 1
         end
-        if (MP-1) != M
+        if (MP - 1) != M
            error("M is too large for mode = 0, better try mode = 1")
         end
     else
-        QLMM[1]=QLMM[1]/πSQ
-        QLMM[2]=QLMM[2]*2.0/πSQ
-        while (MP <= M) && (abs(QLMM[MP+1]) < over)
+        QLMM[1] = QLMM[1]/πSQ
+        QLMM[2] = QLMM[2]*2.0/πSQ
+        while (MP <= M) && (abs(QLMM[MP + 1]) < over)
             D1 = MP + 0.5
             QLMM[MP + 2] = -2.0*MP*QARGU*QLMM[MP + 1]/D1 - (MP-0.5)*QLMM[MP]/D1
             MP = MP + 1
@@ -139,7 +143,7 @@ function TORH1(Z::Real, M::Integer, nmax::Integer;
         end
     end
     nmmax = M
-    DFACQS = -(GAMMA/QLMM[M+2])*GAMMA/π
+    DFACQS = -(GAMMA/QLMM[M + 2])*GAMMA/π
 
     ####################################################################
     ##  Evaluation of PL[0]
@@ -199,10 +203,10 @@ function TORH1(Z::Real, M::Integer, nmax::Integer;
         QL[N+1]=((NP+NP)*Z*QL[NP + 1]-(NP-M+0.5)*QL[NP + 2])/(NP + M - 0.5)
     end
 
-    if !isgamma
-        return PL, QL
+    if nmax == 0
+        return PL[1:1], QL[1:1]
     else
-        return PL.*gamma(M+1.0/2.0), QL.*gamma(M+1.0/2.0)
+        return PL, QL
     end
 
 end
