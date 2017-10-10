@@ -11,13 +11,12 @@ from the lowest degree n = 0 to n = nmax
 - ipre = 1: required precision in the evaluation of the toroidal harmonics.
         if ipre = 1, precision=10**(-12) (taking ε<10**(-12))
         if ipre = 2, precision=10**(-8)  (taking ε<10**(-8))
- - isgamma  = true: enforces a multiplication with with gamma(M + 1/2)
  - mode = 0: can also assume 1 and 2. (For mode = 1,
             results are divided by gamma(m + 1/2), for mode = 2 is good for
             high m's and for z > 20. )
 """
 function TORH1(Z::Real, M::Integer, nmax::Integer;
-                ε = 1e-14, ipre = 1, mode = 0, isgamma=true)
+                ε = 1e-14, ipre = 1, mode = 0)
 
     const tiny = realmin(typeof(Z))*10.0^20 #1e-290
 
@@ -206,7 +205,11 @@ function TORH1(Z::Real, M::Integer, nmax::Integer;
     if nmax == 0
         return PL[1:1], QL[1:1]
     else
-        return PL, QL
+        if nmaxP + 2 < length(PL)
+            return PL[1:(nmaxP + 2)], QL[1:(nmaxP + 2)]
+        else
+            return PL, QL
+        end
     end
 
 end
